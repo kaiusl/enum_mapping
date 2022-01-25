@@ -31,3 +31,59 @@ fn main() {
     Example::V1.try_to_caps(); 
     Example::V2.try_from_caps2(); 
 } 
+
+#[derive(EnumMaping)]
+enum Ex0 {
+    #[mapstr()]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex {
+    #[mapstr("fa")]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex2 {
+    #[mapstr(name="fas")]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex3 {
+    #[mapstr(name="n", "fa", "faas")]
+    V1,
+}
+
+
+#[derive(EnumMaping)]
+enum Ex4 {
+    #[mapstr(name="n", "fa", fas)]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex5 {
+    #[mapstr(name="n", "fa", nasdf="faas")]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex6 {
+    #[mapstr(name="n", "fa", name=true)]
+    V1,
+}
+
+#[derive(EnumMaping)]
+enum Ex7 {
+    #[mapstr2(name="n", "fa", name=true)]
+    V1,
+}
+
+
+
+#[derive(EnumMaping)]
+struct Sa {
+
+}

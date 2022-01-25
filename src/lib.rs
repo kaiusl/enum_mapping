@@ -47,7 +47,7 @@
 use proc_macro::{TokenStream};
 use proc_macro2::{Ident};
 use quote::{format_ident, quote};
-use syn::{Token, parse_macro_input, DeriveInput};
+use syn::{Token, parse_macro_input, DeriveInput, spanned::Spanned};
 
 #[derive(Debug)]
 struct Maping {
@@ -68,10 +68,10 @@ struct MapingFunction {
 }
 
 /// Parse enum variants to MapingFunction, which can be used to create to/from functions
-fn parse_variants_to_maping(variants: &syn::punctuated::Punctuated<syn::Variant, Token![,]>) -> Vec<MapingFunction> {
+fn parse_variants_to_maping(variants: &syn::punctuated::Punctuated<syn::Variant, Token![,]>) -> syn::Result<Vec<MapingFunction>> {
     let mut maping_fns: Vec<MapingFunction> = Vec::new();
 
-    variants.iter().for_each(|variant| {
+    variants.iter().map(|variant| {
         let mut mapstr_idx: usize = 0;
         let has_fields = variant.fields != syn::Fields::Unit;
         variant.attrs.iter()
@@ -80,22 +80,31 @@ fn parse_variants_to_maping(variants: &syn::punctuated::Punctuated<syn::Variant,
                 Some((path, nested))
             } else {
                 None
-            }).for_each(|(path, nested)| {
-                assert!(path.segments.len() == 1, "Found unexpected attribute.");
+            }).map(|(path, nested)| {
+                if path.segments.len() > 1 {
+                    return Err(syn::Error::new(path.span(), "Found unknown attribute on variant."));
+                }
                 match &path.segments[0] {
                     s if s.ident == "mapstr" => {
-                        parse_mapstr_attr(&mut maping_fns, &variant.ident, mapstr_idx, has_fields, &nested);
+                        let b = parse_mapstr_attr(&mut maping_fns, &variant.ident, mapstr_idx, has_fields, &nested);
                         mapstr_idx += 1;
+                        return b;
                     },
-                    _ => {}
+                    _ => {return Err(syn::Error::new(path.span(), "Found unknown attribute on variant."));}
                 }
-            });
-        });        
+            }).collect::<Result<Vec<_>, _>>()
+        }).collect::<Result<Vec<_>, _>>()?;
 
-        maping_fns
+        Ok(maping_fns)
 }
 
-fn parse_mapstr_attr(maping_fns: &mut Vec<MapingFunction>, vident: &Ident, mapstr_idx: usize, has_fields: bool, nested: &syn::punctuated::Punctuated<syn::NestedMeta, Token![,]>) {
+fn parse_mapstr_attr(
+    maping_fns: &mut Vec<MapingFunction>, 
+    vident: &Ident, 
+    mapstr_idx: usize, 
+    has_fields: bool, 
+    nested: &syn::punctuated::Punctuated<syn::NestedMeta, Token![,]>
+) -> syn::Result<()> {
     let mut fn_name = None;
     let mut mapped_value = None;
     let mut to = true;
@@ -104,22 +113,42 @@ fn parse_mapstr_attr(maping_fns: &mut Vec<MapingFunction>, vident: &Ident, mapst
     let mut default_from = None;
     let mut is_default = false;
     let mut try_ = false;
-    // Go through attributes inside mapstr
+    // Go through attributes inside mapstr and extract found values
     for n in nested {
-        //println!("{:#?}", n);
-
         match n {
             // Just literal, the value to map to 
             syn::NestedMeta::Lit(syn::Lit::Str(l)) => {
-                mapped_value = Some(l.value());
+                if mapped_value.is_none() {
+                    mapped_value = Some(l.value());
+                } else {
+                    return Err(syn::Error::new_spanned(n, "`value` is set twice. Remove one."));
+                }
             },
-            // Named argument, must be "name"
+            // Named arguments
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {path, lit: syn::Lit::Str(l), ..})) => {
                 match &path.segments[0].ident {
-                    s if s == "name" => fn_name = Some(l.value()),
-                    s if s == "default_to" => default_to = Some(l.value()),
-                    s if s == "default_from" => default_from = Some(format_ident!("{}", l.value())),
-                    s => panic!("Unknown mapstr named string argument {:#?}.", quote!(#s))
+                    s if s == "name" => {
+                        if fn_name.is_none() {
+                            fn_name = Some(l.value())
+                        } else {
+                            return Err(syn::Error::new_spanned(n, "`name` is set twice. Remove one."));
+                        }
+                    },
+                    s if s == "default_to" => {
+                        if default_to.is_none() {
+                            default_to = Some(l.value())
+                        } else {
+                            return Err(syn::Error::new_spanned(n, "`default_to` is set twice. Remove one."));
+                        }
+                    },
+                    s if s == "default_from" => {
+                        if default_from.is_none() {
+                            default_from = Some(format_ident!("{}", l.value()))
+                        } else {
+                            return Err(syn::Error::new_spanned(n, "`default_from` is set twice. Remove one."));
+                        }
+                    },
+                    _ => { return Err(syn::Error::new_spanned(n, "Found unknown `mapstr` parameter.")); }
                 }
             },
             syn::NestedMeta::Meta(syn::Meta::NameValue(syn::MetaNameValue {path, lit: syn::Lit::Bool(l), ..})) => {
@@ -127,22 +156,25 @@ fn parse_mapstr_attr(maping_fns: &mut Vec<MapingFunction>, vident: &Ident, mapst
                     s if s == "to" => { to = l.value(); },
                     s if s == "from" => { from = l.value(); }
                     s if s == "try" => { try_ = l.value(); }
-                    s => panic!("Unknown mapstr named boolean argument {:#?}.", quote!(#s))
+                    _ => { return Err(syn::Error::new_spanned(n, "Found unknown `mapstr` parameter.")); }
                 }
             },
             syn::NestedMeta::Meta(syn::Meta::Path(syn::Path {segments, ..})) => {
-                assert!(segments.len() == 1, "Unknown mapstr argument {:#?}", segments);
+                if segments.len() != 1 {
+                    return Err(syn::Error::new_spanned(n, "Found unknown `mapstr` parameter."));
+                }
                 match &segments[0].ident {
                     s if s == "default" => { is_default = true },
-                    _ => panic!("Unknown mapstr argument")
+                    _ => { return Err(syn::Error::new_spanned(n, "Found unknown `mapstr` parameter")); }
                 }
             }
             _ => {
-                panic!("Unknown mapstr argument {:#?}.", quote!{#n})
+                return Err(syn::Error::new_spanned(n, "Found unknown `mapstr` parameter."));
             }
         }
     }
 
+    // Create `MapingFunction`-s
     if let Some(mapped_value) = mapped_value {
         // If current variant is marked default, set default_to/from
         // Ignore is they are already set
@@ -153,98 +185,68 @@ fn parse_mapstr_attr(maping_fns: &mut Vec<MapingFunction>, vident: &Ident, mapst
             default_from = Some(vident.clone());
         }
 
-        // TODO: Simplyfy if elses below. Lot's of repeated code.
+        // Function to add maping if function is already present.
+        let add_if_present = |map_fn: &mut MapingFunction| {
+            // Mapping fn already present, add new maping
+            // Don't if marked as default, as _ branch would cover it anyway
+            if !is_default { 
+                map_fn.mapings.push(Maping {
+                    variant: vident.clone(),
+                    to: mapped_value.clone(),
+                    has_fields
+                });
+            }
+            // Set defaults if unset
+            if map_fn.default_to.is_none() {
+                map_fn.default_to = default_to.clone();
+            }
+            if map_fn.default_from.is_none() {
+                map_fn.default_from = default_from.clone();
+            }
+            map_fn.to &= to; // If once set to false, stays false. So if any mapstr sets to=false, function won't be generates
+            map_fn.from &= from; // Same as above
+            map_fn.try_ |= try_; // If once set to true, stays true. 
+        };
+
         if let Some(fn_name) = fn_name {
             // Found named mapping
-
             if let Some(map_fn) = maping_fns.iter_mut().find(|a| a.name == fn_name) {
-                // Mapping fn already present, add new maping
-                // Don't if marked as default, as _ branch would cover it anyway
-                if !is_default { 
-                    map_fn.mapings.push(Maping {
-                        variant: vident.clone(),
-                        to: mapped_value,
-                        has_fields
-                    });
-                }
-                // Set defaults if unset
-                if map_fn.default_to.is_none() {
-                    map_fn.default_to = default_to;
-                }
-                if map_fn.default_from.is_none() {
-                    map_fn.default_from = default_from;
-                }
-                if map_fn.to && !to {
-                    map_fn.to = false;
-                }
-                if map_fn.from && !from {
-                    map_fn.from = false;
-                }
-                if !map_fn.try_ && !try_ {
-                    map_fn.try_ = true;
-                }
+                add_if_present(map_fn);
             } else {
                 // First encounter of such maping function
-                if is_default {
-                    maping_fns.push(MapingFunction {
-                        name: fn_name,
-                        mapings: Vec::new(),
-                        to,
-                        from,
-                        default_to,
-                        default_from,
-                        try_
-                    })
-                } else {
-                    maping_fns.push(MapingFunction {
-                        name: fn_name,
-                        mapings: vec![Maping {
-                            variant: vident.clone(),
-                            to: mapped_value,
-                            has_fields,
-                        }],
-                        to,
-                        from,
-                        default_to,
-                        default_from,
-                        try_
-                    })
-                }
+                let mapings = if is_default {
+                    Vec::new()
+                } else  {
+                    vec![Maping {
+                        variant: vident.clone(),
+                        to: mapped_value,
+                        has_fields,
+                    }]
+                };
+
+                maping_fns.push(MapingFunction {
+                    name: fn_name,
+                    mapings,
+                    to,
+                    from,
+                    default_to,
+                    default_from,
+                    try_
+                });
             }
         } else {
             // Found unnamed mapping
             if let Some(map_fn) = maping_fns.get_mut(mapstr_idx) {
-                // Mapping fn already present, add new maping
-                if !is_default {
-                    map_fn.mapings.push(Maping {
-                        variant: vident.clone(),
-                        to: mapped_value,
-                        has_fields
-                    });
-                }
-                if map_fn.default_to.is_none() {
-                    map_fn.default_to = default_to;
-                }
-                if map_fn.default_from.is_none() {
-                    map_fn.default_from = default_from;
-                }
-                if map_fn.to && !to {
-                    map_fn.to = false;
-                }
-                if map_fn.from && !from {
-                    map_fn.from = false;
-                }
-                if !map_fn.try_ && !try_ {
-                    map_fn.try_ = true;
-                }
+                add_if_present(map_fn);
             } else {
-                panic!("Name must be specified");
+                return Err(syn::Error::new_spanned(nested, "Parameter `name` must be specified. Simplest form should be #[mapstr(name=\"name\", \"value\")]"));
             }
         }
-
     } else {
-        panic!("mapstr without maping.")
+        return Err(syn::Error::new_spanned(nested, "Missing a value to map to. Simplest form should be #[mapstr(name=\"name\", \"value\")]"));
     }
+
+    Ok(())
 }
 
 
@@ -380,10 +382,17 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
     let variants = if let syn::Data::Enum(syn::DataEnum {ref variants, ..}) = ast_struct.data {
         variants
     } else {
-        panic!("Expected an enum.")
+        return syn::Error::new_spanned(ast_struct, "Derive macro `EnumMaping` expected an enum.").into_compile_error().into();
     };
 
-    let fns = parse_variants_to_maping(variants).iter().map(|m_fn| {
+    let fns = match parse_variants_to_maping(variants) {
+        Ok(fns) => fns,
+        Err(e) => {
+            return e.to_compile_error().into()
+        }
+    };
+
+    let fns = fns.iter().map(|m_fn| {
         let fn_name = &m_fn.name;
         let v_idents_no_fields = m_fn.mapings.iter().filter_map(|b| if b.has_fields {None} else {Some(&b.variant)}).collect::<Vec<_>>();
         let v_str_no_fields = m_fn.mapings.iter().filter_map(|b| if b.has_fields {None} else {Some(&b.to)}).collect::<Vec<_>>();
@@ -391,6 +400,7 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
         let v_str_fields = m_fn.mapings.iter().filter_map(|b| if !b.has_fields {None} else {Some(&b.to)}).collect::<Vec<_>>();
         
         let to = if m_fn.to {
+            // to_<fname>(_) -> &'static str
             let to = if let Some(def_to) = &m_fn.default_to {
                 let to_fn_name = format_ident!("to_{}", fn_name);
                 quote! {
@@ -405,6 +415,7 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
             } else {
                 quote!{}
             };
+            // try_to_<name>(_) -> Option<&'static str>
             if m_fn.default_to.is_none() || m_fn.try_ {
                 let to_fn_name = format_ident!("try_to_{}", fn_name);
                 quote! {
@@ -426,6 +437,7 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
         };
 
         let from = if m_fn.from {
+            // from_<fname>(_) -> Self
             let from = if let Some(def_from) = &m_fn.default_from {
                 let from_fn_name = format_ident!("from_{}", fn_name);
                 quote! {
@@ -439,7 +451,7 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
             } else {
                 quote! {}
             };
-
+            // try_from_<fname>(_) -> Option<Self>
             if m_fn.default_from.is_none() || m_fn.try_ {
                 let from_fn_name = format_ident!("try_from_{}", fn_name);
                 quote! {
@@ -468,13 +480,9 @@ pub fn enum_map(item: TokenStream) -> TokenStream {
     
     }).collect::<Vec<_>>();
 
-
-    let expanded = quote! {
+    TokenStream::from(quote! {
         impl #name {
             #(#fns)*
         }
-
-    };
-
-    TokenStream::from(expanded)
+    })
 }

@@ -14,6 +14,10 @@ proc-macro = true
 name = "tests"
 path = "tests/test.rs"
 
+[[test]]
+name = "dev_expand"
+path = "tests/expand.rs"
+
 [dev-dependencies]
 trybuild = { version = "*", features = ["diff"] }
 

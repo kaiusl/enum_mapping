@@ -1,0 +1,17 @@
+error[E0599]: no method named `try_to_caps` found for enum `Example` in the current scope
+  --> tests/no_to.rs:31:17
+   |
+5  | enum Example {
+   | ------------ method `try_to_caps` not found for this
+...
+31 |     Example::V1.try_to_caps();
+   |                 ^^^^^^^^^^^ help: there is an associated function with a similar name: `try_to_caps2`
+
+error[E0599]: no method named `try_from_caps2` found for enum `Example` in the current scope
+  --> tests/no_to.rs:32:17
+   |
+5  | enum Example {
+   | ------------ method `try_from_caps2` not found for this
+...
+32 |     Example::V2.try_from_caps2();
+   |                 ^^^^^^^^^^^^^^ help: there is an associated function with a similar name: `try_to_caps2`

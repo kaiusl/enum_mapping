@@ -6,13 +6,13 @@ enum Example {
     #[mapstr(name = "vname", "variant_1")]
     #[mapstr(name = "short", "V1", default_to="unknown", default_from="Unknown")]
     #[mapstr(name = "pretty_vname", "Variant 1")]
-    #[mapstr(name = "caps", "VARIANT_1", to=false)]
+    #[mapstr(name = "caps", "VARIANT_1", no_to)]
     V1,
 
     #[mapstr("variant_2")]
     #[mapstr("V2")]
     #[mapstr("Variant 2")]
-    #[mapstr(name = "caps2", "VARIANT_1", from=false)]
+    #[mapstr(name = "caps2", "VARIANT_1", no_from)]
     V2,
 
     #[mapstr(name = "pretty_vname", "Variant 3")]
@@ -81,9 +81,5 @@ enum Ex7 {
     V1,
 }
 
-
-
 #[derive(EnumMaping)]
-struct Sa {
-
-}
+struct Sa {}

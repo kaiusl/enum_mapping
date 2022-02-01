@@ -15,7 +15,7 @@ name = "tests"
 path = "tests/test.rs"
 
 [[test]]
-name = "dev_expand"
+name = "expand"
 path = "tests/expand.rs"
 
 [dev-dependencies]

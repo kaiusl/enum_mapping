@@ -24,7 +24,7 @@ error: `value` is set twice. Remove one.
 55 |     #[mapstr(name="n", "fa", "faas")]
    |                              ^^^^^^
 
-error: Found unknown `mapstr` parameter
+error: Found unknown `mapstr` parameter.
   --> tests/errors.rs:62:30
    |
 62 |     #[mapstr(name="n", "fa", fas)]
@@ -36,7 +36,7 @@ error: Found unknown `mapstr` parameter.
 68 |     #[mapstr(name="n", "fa", nasdf="faas")]
    |                              ^^^^^^^^^^^^
 
-error: Found unknown `mapstr` parameter.
+error: Named parameter `name` must be a string literal.
   --> tests/errors.rs:74:30
    |
 74 |     #[mapstr(name="n", "fa", name=true)]
@@ -49,12 +49,10 @@ error: Found unknown attribute on variant.
    |       ^^^^^^^
 
 error: Derive macro `EnumMaping` expected an enum.
-  --> tests/errors.rs:87:1
+  --> tests/errors.rs:85:1
    |
-87 | / struct Sa {
-88 | |
-89 | | }
-   | |_^
+85 | struct Sa {}
+   | ^^^^^^^^^^^^
 
 error: cannot find attribute `mapstr2` in this scope
   --> tests/errors.rs:80:7

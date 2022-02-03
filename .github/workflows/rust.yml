@@ -2,7 +2,6 @@ name: Rust
 
 on: workflow_dispatch
 
-
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: full
@@ -10,7 +9,10 @@ env:
 jobs:
   build:
 
-    runs-on: self-hosted-manjaro
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,6 +28,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Clippy
+      if: ${{ matrix.os == ubuntu-latest }}
       continue-on-error: true
       run: cargo clippy
     - name: Tests

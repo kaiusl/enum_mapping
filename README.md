@@ -1,4 +1,4 @@
-# enum_mapping
+# #[derive(EnumMaping)]
 
 [![Rust](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml/badge.svg)](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml)
 

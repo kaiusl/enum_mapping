@@ -1,5 +1,7 @@
 # enum_mapping
 
+[![Rust](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml/badge.svg)](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml)
+
 Quick enum mappings to strings
 
 This crate provides a derive macro `#[derive(EnumMaping)]` to quickly create mappings between enum variants and strings.

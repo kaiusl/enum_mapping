@@ -53,26 +53,26 @@ fn basic() {
     assert_eq!(Example::Unknown.to_short(), "unknown");
     assert_eq!(Example::Error.to_short(), "unknown");
 
-    // assert_eq!(Example::V1.try_to_short(), Some("V1"));
-    // assert_eq!(Example::V2.try_to_short(), Some("V2"));
-    // assert_eq!(Example::V3.try_to_short(), Some("V3"));
-    // assert_eq!(Example::Unknown.try_to_short(), None);
-    // assert_eq!(Example::Error.try_to_short(), None);
+    assert_eq!(Example::V1.try_to_short(), Some("V1"));
+    assert_eq!(Example::V2.try_to_short(), Some("V2"));
+    assert_eq!(Example::V3.try_to_short(), Some("V3"));
+    assert_eq!(Example::Unknown.try_to_short(), None);
+    assert_eq!(Example::Error.try_to_short(), None);
 
-    // assert_eq!(Example::V1.try_to_pretty_vname(), Some("Variant 1"));
-    // assert_eq!(Example::V2.try_to_pretty_vname(), None);
-    // assert_eq!(Example::V3.try_to_pretty_vname(), Some("Variant 3"));
-    // assert_eq!(Example::Unknown.try_to_pretty_vname(), None);
-    // assert_eq!(Example::Error.try_to_pretty_vname(), None);
+    assert_eq!(Example::V1.try_to_pretty_vname(), Some("Variant 1"));
+    assert_eq!(Example::V2.try_to_pretty_vname(), None);
+    assert_eq!(Example::V3.try_to_pretty_vname(), Some("Variant 3"));
+    assert_eq!(Example::Unknown.try_to_pretty_vname(), None);
+    assert_eq!(Example::Error.try_to_pretty_vname(), None);
 
-    // assert_eq!(Example::V1.try_to_caps(), None);
-    // assert_eq!(Example::V2.try_to_caps(), Some("VARIANT_2"));
-    // assert_eq!(Example::V3.try_to_caps(), Some("VARIANT_3"));
-    // assert_eq!(Example::Unknown.try_to_caps(), None);
-    // assert_eq!(Example::Error.try_to_caps(), Some("ERR"));
+    assert_eq!(Example::V1.try_to_caps(), None);
+    assert_eq!(Example::V2.try_to_caps(), Some("VARIANT_2"));
+    assert_eq!(Example::V3.try_to_caps(), Some("VARIANT_3"));
+    assert_eq!(Example::Unknown.try_to_caps(), None);
+    assert_eq!(Example::Error.try_to_caps(), Some("ERR"));
 
-    // assert_eq!(Example::V3.try_to_error(), None);
-    // assert_eq!(Example::Error.try_to_error(), Some("err"));
+    assert_eq!(Example::V3.try_to_error(), None);
+    assert_eq!(Example::Error.try_to_error(), Some("err"));
 
     assert_eq!(Example::from_vname("variant_1"), Example::V1);
     assert_eq!(Example::from_vname("variant_2"), Example::V2);

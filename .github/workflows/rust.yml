@@ -1,10 +1,7 @@
 name: Rust
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: workflow_dispatch
+
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,7 +10,7 @@ env:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted-manjaro
 
     steps:
     - uses: actions/checkout@v2
@@ -29,7 +26,7 @@ jobs:
     - name: Build
       run: cargo build --verbose
     - name: Clippy
+      continue-on-error: true
       run: cargo clippy
     - name: Tests
       run: cargo test --verbose
-    

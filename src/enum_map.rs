@@ -7,7 +7,7 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
 
 
     let ast_struct = parse_macro_input!(item as DeriveInput);
-    // eprintln!("{:#?}", ast_struct);
+    //eprintln!("{:#?}", ast_struct);
 
     let name = &ast_struct.ident;
     let vis = &ast_struct.vis;
@@ -20,17 +20,17 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
             .into();
     };
 
-    let fns = match parse_variants_to_maping(variants) {
+    let mut fns = match parse_variants_to_maping(variants) {
         Ok(fns) => fns,
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let fns = fns.iter().map(|m_fn| {
+    let fns = fns.iter_mut().map(|m_fn| {
         let fn_name = &m_fn.name;
-        let v_idents_no_fields = m_fn.mapings.iter().filter_map(|b| if b.has_fields {None} else {Some(&b.variant)}).collect::<Vec<_>>();
-        let v_str_no_fields = m_fn.mapings.iter().filter_map(|b| if b.has_fields {None} else {Some(&b.to)}).collect::<Vec<_>>();
-        let v_idents_fields = m_fn.mapings.iter().filter_map(|b| if !b.has_fields {None} else {Some(&b.variant)}).collect::<Vec<_>>();
-        let v_str_fields = m_fn.mapings.iter().filter_map(|b| if !b.has_fields {None} else {Some(&b.to)}).collect::<Vec<_>>();
+
+        let (m_fn_fields, m_fn_no_fields): (Vec<_>, Vec<_>) = std::mem::take(&mut m_fn.mapings).into_iter().partition(|b| b.has_fields);
+        let (v_idents_fields, v_str_fields): (Vec<_>, Vec<_>) = m_fn_fields.into_iter().map(|a| (a.variant, a.to)).unzip();
+        let (v_idents_no_fields, v_str_no_fields): (Vec<_>, Vec<_>) = m_fn_no_fields.into_iter().map(|a| (a.variant, a.to)).unzip();
         
         let to = if m_fn.to {
             // to_..(_) -> &'static str
@@ -40,7 +40,7 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
                     #vis fn #to_fn_name(&self) -> &'static str {
                         match self {
                             #(Self::#v_idents_no_fields => #v_str_no_fields,)*
-                            #(Self::#v_idents_fields(_) => #v_str_fields,)*
+                            #(Self::#v_idents_fields(..) => #v_str_fields,)*
                             _ => #def_to
                         }
                     }
@@ -57,7 +57,7 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
                     #vis fn #to_fn_name(&self) -> std::option::Option<&'static str> {
                         match self {
                             #(Self::#v_idents_no_fields => std::option::Option::Some(#v_str_no_fields),)*
-                            #(Self::#v_idents_fields(_) => std::option::Option::Some(#v_str_fields),)*
+                            #(Self::#v_idents_fields(..) => std::option::Option::Some(#v_str_fields),)*
                             _ => None
                         }
                     }
@@ -166,7 +166,7 @@ fn parse_variants_to_maping(
 
     for variant in variants {
         let mut mapstr_idx: usize = 0;
-        let has_fields = variant.fields != syn::Fields::Unit;
+        let has_fields = !variant.fields.is_empty();
 
         for attr in &variant.attrs {
             let (path, nested) = if let Ok(syn::Meta::List(syn::MetaList { path, nested, .. })) = attr.parse_meta() {
@@ -348,7 +348,7 @@ fn parse_mapstr_attr(
             if map_fn.default_from.is_none() {
                 map_fn.default_from = default_from.clone();
             }
-            map_fn.to &= to; // If once set to false, stays false. So if any mapstr sets to=false, function won't be generates
+            map_fn.to &= to; // If once set to false, stays false. So if any mapstr sets to=false, function won't be generated
             map_fn.from &= from; // Same as above
             map_fn.try_ |= try_; // If once set to true, stays true.
         };

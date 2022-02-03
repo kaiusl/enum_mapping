@@ -1,22 +1,20 @@
 error: Missing a value to map to. Simplest form should be #[mapstr(name="name", "value")]
-  --> tests/errors.rs:35:10
+  --> tests/errors.rs:37:7
    |
-35 | #[derive(EnumMaping)]
-   |          ^^^^^^^^^^
-   |
-   = note: this error originates in the derive macro `EnumMaping` (in Nightly builds, run with -Z macro-backtrace for more info)
+37 |     #[mapstr()]
+   |       ^^^^^^
 
 error: Parameter `name` must be specified. Simplest form should be #[mapstr(name="name", "value")]
-  --> tests/errors.rs:43:14
+  --> tests/errors.rs:43:7
    |
 43 |     #[mapstr("fa")]
-   |              ^^^^
+   |       ^^^^^^
 
 error: Missing a value to map to. Simplest form should be #[mapstr(name="name", "value")]
-  --> tests/errors.rs:49:14
+  --> tests/errors.rs:49:7
    |
 49 |     #[mapstr(name="fas")]
-   |              ^^^^^^^^^^
+   |       ^^^^^^
 
 error: `value` is set twice. Remove one.
   --> tests/errors.rs:55:30

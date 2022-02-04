@@ -50,20 +50,20 @@ mod enum_map;
 /// Macro to derive custom mapings for enum types.
 ///
 /// It provides function implementations for `to` and `from` functions for enum.
-/// Maping is specified on enum variant by attribute `#[mapstr(..)]`. 
+/// Maping is specified on enum variant by attribute `#[mapstr(..)]`.
 ///
 /// Multiple mappings can be specified for single variant.
 /// If `name` is provided, the order doesn't matter.
 /// If it is not then that `mapstr` must be at the same position as it first appeared. See [Examples](#examples) below.
 ///
-/// By default this macro will create two functions 
+/// By default this macro will create two functions
 /// * `fn try_to_<fname>(&self) -> Option<&'static str`>,
 /// * `fn try_from_<fname>(s: &str) -> Option<Self>`.
-/// 
-/// If defaults are set the created functions are 
+///
+/// If defaults are set the created functions are
 /// * `fn to_<fname>(&self) -> &'static str`,
 /// * `fn from_<fname>(s: &str) -> Self`.
-/// 
+///
 /// First set of functions can still be then created be passing argument `try` to the `mapstr` attribute.
 ///
 /// # Variant attributes
@@ -73,18 +73,18 @@ mod enum_map;
 ///     - `default` - set variant as default. Optional. If set resulting functions will return directly `&str` and `Self` and remove "try" from the name.
 ///     - `default_to`: string - set default string to map to. Optional. If set resulting function will return directly `&str` and remove "try" from the function name.
 ///     - `default_from`: string - set default variant to map to. Optional. If set resulting function will return directly `Self` and remove "try" from the function name.
-///     - `try` - if set create functions returning [`Option`](_) even if defaults are set. 
+///     - `try` - if set create functions returning [`Option`](_) even if defaults are set.
 ///     - `no_to` - if set don't create `to` methods.
 ///     - `no_from` - if set don't create `from` methods.
 ///
 /// Optional arguments can be specified on any of the variants but only the first specification is used.
 ///
 /// # Current shortcomings
-/// * Variants with fields have limited support. They cannot be created with `from` functions and in `to` functions the field values are currently ignored. 
-/// 
+/// * Variants with fields have limited support. They cannot be created with `from` functions and in `to` functions the field values are currently ignored.
+///
 ///   If maping is applied to an enum which variants have field then `to` function ignores field values.
 ///   `From` function must return default or `None` instead of variant with fields as we don't really know what to provide in those fields.
-/// 
+///
 ///   I suppose if all variants have the same field we could create function with extra parameters but if there are many different
 ///   types stored in variants then every single one of them would need to be in the function signature and that's not reasonable thing to do.
 ///  

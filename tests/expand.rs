@@ -56,13 +56,7 @@ use enum_maping::EnumMaping;
 #[derive(EnumMaping)]
 enum Example {
     #[mapstr(name = "vname", "variant_1")]
-    #[mapstr(
-        name = "short",
-        "V1",
-        default_to = "u",
-        default_from = "Unknown",
-        try
-    )]
+    #[mapstr(name = "short", "V1", default_to = "u", default_from = "Unknown", try)]
     #[mapstr(name = "pretty_vname", "Variant 1")]
     V1,
 

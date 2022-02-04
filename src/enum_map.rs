@@ -1,4 +1,4 @@
-use itertools::{Itertools, Either};
+use itertools::{Either, Itertools};
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::{format_ident, quote};
@@ -7,7 +7,6 @@ use syn::{parse_macro_input, spanned::Spanned, DeriveInput, Token};
 /// Main entry of #[derive(EnumMaping)] macro
 pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(item as DeriveInput);
-    // eprintln!("{:#?}", ast_struct);
     let enum_ident = &ast.ident;
     let enum_vis = &ast.vis;
 
@@ -35,12 +34,8 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
                 };
                 out((b.variant, b.to))
             });
-        let v_fields: (Vec<_>, Vec<_>) = m_fn_fields
-            .into_iter()
-            .unzip();
-        let v_no_fields: (Vec<_>, Vec<_>) = m_fn_no_fields
-            .into_iter()
-            .unzip();
+        let v_fields = m_fn_fields.into_iter().unzip();
+        let v_no_fields = m_fn_no_fields.into_iter().unzip();
 
         let to = create_to(enum_vis, &v_fields, &v_no_fields, m_fn);
         let from = create_from(enum_vis, &v_no_fields, m_fn);
@@ -60,13 +55,13 @@ pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
 
 /// Create [try]_to function TokenStreams
 fn create_to(
-    enum_vis: &syn::Visibility, 
+    enum_vis: &syn::Visibility,
     (v_idents_fields, v_str_fields): &(Vec<Ident>, Vec<String>),
     (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>),
-    m_fn: &MapingFunction
+    m_fn: &MapingFunction,
 ) -> proc_macro2::TokenStream {
     if !m_fn.to {
-        return quote!{};
+        return quote! {};
     }
     let fn_name = &m_fn.name;
 
@@ -101,12 +96,12 @@ fn create_to(
         (Some(def_to), true) => {
             let to = to(def_to);
             let try_to = try_to();
-            quote!{
+            quote! {
                 #to
                 #try_to
             }
-        },
-        (None, _) => try_to()
+        }
+        (None, _) => try_to(),
     }
 }
 
@@ -114,10 +109,10 @@ fn create_to(
 fn create_from(
     enum_vis: &syn::Visibility,
     (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>),
-    m_fn: &MapingFunction
+    m_fn: &MapingFunction,
 ) -> proc_macro2::TokenStream {
     if !m_fn.from {
-        return quote!{};
+        return quote! {};
     }
 
     let fn_name = &m_fn.name;
@@ -151,12 +146,12 @@ fn create_from(
         (Some(def_from), true) => {
             let from = from(def_from);
             let try_from = try_from();
-            quote!{
+            quote! {
                 #from
                 #try_from
             }
-        },
-        (None, _) => try_from()
+        }
+        (None, _) => try_from(),
     }
 }
 

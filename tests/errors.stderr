@@ -40,12 +40,6 @@ error: Named parameter `name` must be a string literal.
 74 |     #[mapstr(name="n", "fa", name=true)]
    |                              ^^^^^^^^^
 
-error: Found unknown attribute on variant.
-  --> tests/errors.rs:80:7
-   |
-80 |     #[mapstr2(name="n", "fa", name=true)]
-   |       ^^^^^^^
-
 error: Derive macro `EnumMaping` expected an enum.
   --> tests/errors.rs:85:1
    |

@@ -47,6 +47,8 @@
 use proc_macro::TokenStream;
 mod enum_map;
 
+mod helpers;
+
 /// Macro to derive custom mapings for enum types.
 ///
 /// It provides function implementations for `to` and `from` functions for enum.

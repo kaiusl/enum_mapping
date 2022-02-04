@@ -44,7 +44,7 @@ use enum_maping::EnumMaping;
 
 // #[derive(EnumMaping)]
 // enum Ex7 {
-//     #[mapstr2(name="n", "fa", name=true)]
+//     #[mapst2r(name="n", "fa")]
 //     V1,
 // }
 

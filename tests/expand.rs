@@ -59,7 +59,7 @@ enum Example {
     #[mapstr(
         name = "short",
         "V1",
-        default_to = "unknown",
+        default_to = "u",
         default_from = "Unknown",
         try
     )]
@@ -72,7 +72,7 @@ enum Example {
     V2,
 
     #[mapstr(name = "pretty_vname", "Variant 3")]
-    #[mapstr("V3")]
+    #[mapstr("V3", default)]
     #[mapstr(name = "vname", "variant_3")]
     V3,
 

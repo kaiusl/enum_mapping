@@ -383,14 +383,11 @@ fn parse_mapstr_attr(
         // Function to add maping if function is already present.
         let add_if_present = |map_fn: &mut MapingFunction| {
             // Mapping fn already present, add new maping
-            // Don't if marked as default, as _ branch would cover it anyway
-            if !is_default {
-                map_fn.mapings.push(Maping {
-                    variant: vident.clone(),
-                    to: mapped_value.clone(),
-                    has_fields,
-                });
-            }
+            map_fn.mapings.push(Maping {
+                variant: vident.clone(),
+                to: mapped_value.clone(),
+                has_fields,
+            });
             // Set defaults if unset
             if map_fn.default_to.is_none() {
                 map_fn.default_to = default_to.clone();

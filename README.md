@@ -1,10 +1,10 @@
-# #[derive(EnumMaping)]
+# #[derive(EnumMap)]
 
 [![Rust](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml/badge.svg)](https://github.com/kaiusl/enum_mapping/actions/workflows/rust.yml)
 
 Quick enum mappings to strings
 
-This crate provides a derive macro `#[derive(EnumMaping)]` to quickly create mappings between enum variants and strings.
+This crate provides a derive macro `#[derive(EnumMap)]` to quickly create mappings between enum variants and strings.
 
 For example instead of writing
 ```rust
@@ -33,9 +33,9 @@ impl Example {
 ```
 you can do
 ```rust
-use enum_maping::EnumMaping;
+use enum_map::EnumMap;
 
-#[derive(EnumMaping)]
+#[derive(EnumMap)]
 enum Example {
     #[mapstr(name="vname", "variant_1")]
     V1,

@@ -1,4 +1,4 @@
-use enum_maping::EnumMaping;
+use enum_map::EnumMap;
 
 #[test]
 fn test() {
@@ -8,15 +8,15 @@ fn test() {
 
 #[test]
 fn simple() {
-    #[derive(EnumMaping, Debug, Eq, PartialEq)]
+    #[derive(EnumMap, Debug, Eq, PartialEq)]
     enum E {
-        #[mapstr(name = "vname", "variant_1")]
+        #[mapstr("variant_1", name = "vname")]
         V1,
 
         #[mapstr("variant_2")]
         V2,
 
-        #[mapstr(name = "vname", default, "unknown")]
+        #[mapstr("unknown", name = "vname", default)]
         Unknown,
     }
 
@@ -33,30 +33,30 @@ fn simple() {
 
 #[test]
 fn basic() {
-    #[derive(EnumMaping, Debug, Eq, PartialEq)]
+    #[derive(EnumMap, Debug, Eq, PartialEq)]
     enum Example {
-        #[mapstr(name = "vname", "variant_1")]
-        #[mapstr(name = "short", "V1", default_to = "u", default_from = "Unknown", try)]
-        #[mapstr(name = "pretty_vname", "Variant 1")]
+        #[mapstr("variant_1", name = "vname")]
+        #[mapstr("V1", name = "short", default_to="u", default_from=Unknown, r#try)]
+        #[mapstr("Variant 1", name = "pretty_vname")]
         V1,
 
         #[mapstr("variant_2")]
         #[mapstr("V2")]
         //#[mapstr("Variant 2")]
-        #[mapstr(name = "caps", "VARIANT_2")]
+        #[mapstr("VARIANT_2", name = "caps")]
         V2,
 
-        #[mapstr(name = "pretty_vname", "Variant 3")]
+        #[mapstr("Variant 3", name = "pretty_vname")]
         #[mapstr("V3", default)]
-        #[mapstr(name = "vname", "variant_3")]
+        #[mapstr("variant_3", name = "vname")]
         #[mapstr("VARIANT_3")]
         V3,
 
-        #[mapstr(name = "vname", default, "unknown")]
+        #[mapstr("unknown", name = "vname", default)]
         Unknown,
 
-        #[mapstr(name = "error", "err")]
-        #[mapstr(name = "caps", "ERR")]
+        #[mapstr("err", name = "error")]
+        #[mapstr("ERR", name = "caps")]
         Error,
     }
 
@@ -140,16 +140,15 @@ fn basic() {
 
 #[test]
 fn multi_def() {
-    #[derive(EnumMaping, Debug, Eq, PartialEq)]
+    #[derive(EnumMap, Debug, Eq, PartialEq)]
     enum E {
-        #[mapstr(
+        #[mapstr("variant_1",
             name = "dv2",
-            "variant_1",
             default_to = "error",
-            default_from = "Error"
+            default_from = Error
         )]
-        #[mapstr(name = "dv2_t", "variant_1", default_to = "error")]
-        #[mapstr(name = "dv2_f", "variant_1", default_from = "Error")]
+        #[mapstr("variant_1", name = "dv2_t", default_to = "error")]
+        #[mapstr("variant_1", name = "dv2_f",  default_from = Error)]
         V1,
 
         #[mapstr("variant_2")]
@@ -157,9 +156,9 @@ fn multi_def() {
         #[mapstr("variant_2")]
         V2,
 
-        #[mapstr(name = "dv2", default, "unknown")]
-        #[mapstr(name = "dv2_t", default, "unknown")]
-        #[mapstr(name = "dv2_f", default, "unknown")]
+        #[mapstr("unknown", name = "dv2", default)]
+        #[mapstr("unknown", name = "dv2_t", default)]
+        #[mapstr("unknown", name = "dv2_f", default)]
         Unknown,
 
         Error,

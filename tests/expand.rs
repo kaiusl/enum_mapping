@@ -1,4 +1,10 @@
-use enum_maping::EnumMaping;
+use enum_map::EnumMap;
+
+#[derive(EnumMap)]
+enum E {
+    #[mapstr("a", name="n", default_to="a", default_from=V1)]
+    V1,
+}
 
 // #[derive(EnumMaping)]
 // enum Ex0 {
@@ -53,29 +59,29 @@ use enum_maping::EnumMaping;
 
 // }
 
-#[derive(EnumMaping)]
-enum Example {
-    #[mapstr(name = "vname", "variant_1")]
-    #[mapstr(name = "short", "V1", default_to = "u", default_from = "Unknown", try)]
-    #[mapstr(name = "pretty_vname", "Variant 1")]
-    V1,
+// #[derive(EnumMaping)]
+// enum Example {
+//     #[mapstr(name = "vname", "variant_1")]
+//     #[mapstr(name = "short", "V1", default_to = "u", default_from = "Unknown", try)]
+//     #[mapstr(name = "pretty_vname", "Variant 1")]
+//     V1,
 
-    #[mapstr("variant_2")]
-    #[mapstr("V2")]
-    #[mapstr("Variant 2")]
-    V2,
+//     #[mapstr("variant_2")]
+//     #[mapstr("V2")]
+//     #[mapstr("Variant 2")]
+//     V2,
 
-    #[mapstr(name = "pretty_vname", "Variant 3")]
-    #[mapstr("V3", default)]
-    #[mapstr(name = "vname", "variant_3")]
-    V3,
+//     #[mapstr(name = "pretty_vname", "Variant 3")]
+//     #[mapstr("V3", default)]
+//     #[mapstr(name = "vname", "variant_3")]
+//     V3,
 
-    #[mapstr(name = "vname", default, "unknown")]
-    Unknown,
+//     #[mapstr(name = "vname", default, "unknown")]
+//     Unknown,
 
-    #[mapstr(name = "error", "err")]
-    Error(String),
-}
+//     #[mapstr(name = "error", "err")]
+//     Error(String),
+// }
 
 // fn main() {
 //     assert_eq!(Example::V1.to_vname(), "variant_1");

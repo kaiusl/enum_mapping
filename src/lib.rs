@@ -1,6 +1,6 @@
-//! Quick enum mappings to strings
+//! Quick enum mapings to strings
 //!
-//! This crate provides a derive macro `#[derive(EnumMaping)]` to quickly create mappings between enum variants and strings.
+//! This crate provides a derive macro `#[derive(EnumMap)]` to quickly create mappings between enum variants and strings.
 //!
 //! For example instead of writing
 //! ```
@@ -31,11 +31,11 @@
 //! ```
 //! you can do
 //! ```
-//! use enum_maping::EnumMaping;
+//! use enum_map::EnumMap;
 //!
-//! #[derive(EnumMaping)]
+//! #[derive(EnumMap)]
 //! enum Example {
-//!     #[mapstr(name="vname", "variant_1")]
+//!     #[mapstr("variant_1", name="vname")]
 //!     V1,
 //!     #[mapstr("variant_2")]
 //!     V2,
@@ -59,12 +59,12 @@ mod helpers;
 /// If it is not then that `mapstr` must be at the same position as it first appeared. See [Examples](#examples) below.
 ///
 /// By default this macro will create two functions
-/// * `fn try_to_<fname>(&self) -> Option<&'static str`>,
-/// * `fn try_from_<fname>(s: &str) -> Option<Self>`.
+/// * `fn try_to_<name>(&self) -> Option<&'static str`>,
+/// * `fn try_from_<name>(s: &str) -> Option<Self>`.
 ///
 /// If defaults are set the created functions are
-/// * `fn to_<fname>(&self) -> &'static str`,
-/// * `fn from_<fname>(s: &str) -> Self`.
+/// * `fn to_<name>(&self) -> &'static str`,
+/// * `fn from_<name>(s: &str) -> Self`.
 ///
 /// First set of functions can still be then created be passing argument `try` to the `mapstr` attribute.
 ///
@@ -93,11 +93,11 @@ mod helpers;
 /// # Examples
 /// Simplest form with default function names
 /// ```
-/// use enum_maping::EnumMaping;
+/// use enum_map::EnumMap;
 ///
-/// #[derive(EnumMaping, Debug, Eq, PartialEq)]
+/// #[derive(EnumMap, Debug, Eq, PartialEq)]
 /// enum Example {
-///     #[mapstr(name="vname", "variant_1")]
+///     #[mapstr("variant_1", name="vname")]
 ///     V1,
 ///     #[mapstr("variant_2")]
 ///     V2,
@@ -133,33 +133,33 @@ mod helpers;
 /// ```
 /// Following shows different options.
 /// ```
-/// use enum_maping::EnumMaping;
+/// use enum_map::EnumMap;
 ///
-/// #[derive(EnumMaping, Debug, Eq, PartialEq)]
+/// #[derive(EnumMap, Debug, Eq, PartialEq)]
 /// enum Example {
-///     #[mapstr(name = "vname", "variant_1")] //
-///     #[mapstr(name = "short", "V1", default_to="u", default_from="Unknown")] // Set defaults
-///     #[mapstr(name = "pretty", "Variant 1")]
+///     #[mapstr("variant_1", name = "vname")] //
+///     #[mapstr("V1", name = "short", default_to="u", default_from=Unknown)] // Set defaults
+///     #[mapstr("Variant 1", name = "pretty")]
 ///     V1,
 ///
 ///     // Mapings in the same order as on the first variant
 ///     #[mapstr("variant_2")] // vname
 ///     #[mapstr("V2")] // short
 ///     // ignore in pretty
-///     #[mapstr(name = "caps", "VARIANT_2")] // Create new maping ignoring the first variant.
+///     #[mapstr("VARIANT_2", name = "caps")] // Create new maping ignoring the first variant.
 ///     V2,
 ///
 ///     // If `name` is specified, order doesn't matter. If not it must be in the correct place.
-///     #[mapstr(name = "pretty", "Variant 3")] // Can be reordered
+///     #[mapstr("Variant 3", name = "pretty")] // Can be reordered
 ///     #[mapstr("V3")] // Must be second to be part of "short" maping.
-///     #[mapstr(name = "vname", "variant_3")] // Can be reordered
+///     #[mapstr("variant_3", name = "vname")] // Can be reordered
 ///     #[mapstr("VARIANT_3")] // part of "Caps" as that was specified fourth
 ///     V3,
 ///
-///     #[mapstr(name = "vname", default, "unknown")] // Set this variant to be default of "vname" maping
+///     #[mapstr("unknown", name = "vname", default)] // Set this variant to be default of "vname" maping
 ///     Unknown,
 ///
-///     #[mapstr(name = "caps", "ERR")]
+///     #[mapstr("ERR", name = "caps")]
 ///     Error
 /// }
 ///
@@ -175,7 +175,7 @@ mod helpers;
 /// assert_eq!(Example::try_from_pretty("Variant 3"), Some(Example::V3));
 /// assert_eq!(Example::try_from_pretty("unknown"), None);
 /// ```
-#[proc_macro_derive(EnumMaping, attributes(mapstr))]
+#[proc_macro_derive(EnumMap, attributes(mapstr))]
 pub fn enum_map(item: TokenStream) -> TokenStream {
     enum_map::enum_map(item)
 }

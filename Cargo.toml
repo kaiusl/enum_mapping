@@ -1,5 +1,5 @@
 [package]
-name = "enum_maping"
+name = "enum_map"
 version = "0.1.0"
 edition = "2021"
 autotests = false
@@ -9,7 +9,7 @@ publish = false
 proc-macro = true
 
 [dependencies]
-syn = { version = "1.0.86", features = ["full", "parsing"] }
+syn = { version = "1.0.86", features = ["full", "parsing", "extra-traits"] }
 quote = "1.0.15"
 proc-macro2 = "1.0.36"
 itertools = "0.10.3"

@@ -1,55 +1,83 @@
-error: Missing a value to map to. Simplest form should be #[mapstr(name="name", "value")]
-  --> tests/errors.rs:37:7
+warning: unused import: `Span`
+ --> src/enum_map.rs
+  |
+  | use proc_macro2::{Ident, Span};
+  |                          ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: associated function is never used: `set_twice`
+  --> src/helpers.rs
+   |
+   |     pub(crate) fn set_twice(arg: &'static str) -> Self {
+   |                   ^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: associated function is never used: `not_set`
+  --> src/helpers.rs
+   |
+   |     pub(crate) fn not_set(arg: &'static str) -> Self {
+   |                   ^^^^^^^
+
+error: argument `value` is not set
+  --> tests/errors.rs:37:14
    |
 37 |     #[mapstr()]
-   |       ^^^^^^
+   |              ^
 
-error: Parameter `name` must be specified. Simplest form should be #[mapstr(name="name", "value")]
+error: argument `name` must be specified on first variant
   --> tests/errors.rs:43:7
    |
 43 |     #[mapstr("fa")]
    |       ^^^^^^
 
-error: Missing a value to map to. Simplest form should be #[mapstr(name="name", "value")]
-  --> tests/errors.rs:49:7
+error: argument `value` is not set
+  --> tests/errors.rs:49:14
    |
 49 |     #[mapstr(name="fas")]
-   |       ^^^^^^
+   |              ^^^^
 
-error: `value` is set twice. Remove one.
+error: argument `value` is set twice
   --> tests/errors.rs:55:30
    |
-55 |     #[mapstr(name="n", "fa", "faas")]
+55 |     #[mapstr("fa", name="n", "faas")]
    |                              ^^^^^^
 
-error: Found unknown `mapstr` parameter.
+error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, string literal
   --> tests/errors.rs:62:30
    |
-62 |     #[mapstr(name="n", "fa", fas)]
+62 |     #[mapstr("fa", name="n", fas)]
    |                              ^^^
 
-error: Found unknown `mapstr` parameter.
-  --> tests/errors.rs:68:30
+error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, string literal
+  --> tests/errors.rs:68:31
    |
-68 |     #[mapstr(name="n", "fa", nasdf="faas")]
-   |                              ^^^^^^^^^^^^
+68 |     #[mapstr("fa", name="n",  nasdf="faas")]
+   |                               ^^^^^
 
-error: Named parameter `name` must be a string literal.
-  --> tests/errors.rs:74:30
+error: expected string literal
+  --> tests/errors.rs:74:35
    |
-74 |     #[mapstr(name="n", "fa", name=true)]
-   |                              ^^^^^^^^^
+74 |     #[mapstr("fa", name="n", name=true)]
+   |                                   ^^^^
 
-error: Derive macro `EnumMaping` expected an enum.
-  --> tests/errors.rs:85:1
+error: expected identifier
+  --> tests/errors.rs:86:44
    |
-85 | struct Sa {}
-   | ^^^^^^^^^^^^
+86 |     #[mapstr("fa", name="n",  default_from="fa")]
+   |                                            ^^^^
+
+error: expected `enum`
+  --> tests/errors.rs:91:1
+   |
+91 | struct Sa {}
+   | ^^^^^^
 
 error: cannot find attribute `mapstr2` in this scope
   --> tests/errors.rs:80:7
    |
-80 |     #[mapstr2(name="n", "fa", name=true)]
+80 |     #[mapstr2("fa", name="n",  name=true)]
    |       ^^^^^^^ help: a derive helper attribute with a similar name exists: `mapstr`
 
 error[E0599]: no method named `try_to_caps` found for enum `Example` in the current scope

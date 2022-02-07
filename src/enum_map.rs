@@ -17,169 +17,25 @@ mod kw {
     syn::custom_keyword!(default);
     syn::custom_keyword!(r#try);
     syn::custom_keyword!(mapstr);
+    syn::custom_keyword!(display);
 }
-
 /// Main entry of #[derive(EnumMap)] macro
 pub(crate) fn enum_map(item: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(item as syn::ItemEnum);
     let enum_ident = &ast.ident;
     let enum_vis = &ast.vis;
 
+
     let mut mapings = match parse_variants_to_maping(&ast.variants) {
         Ok(mapings) => mapings,
         Err(e) => return e.to_compile_error().into(),
     };
 
-    let fns = mapings.iter_mut().map(|m| {
-        let (m_fields, m_no_fields): (Vec<_>, Vec<_>) = std::mem::take(&mut m.rules)
-            .into_iter()
-            .partition_map(|vm| {
-                let out = if vm.has_fields {
-                    Either::Left
-                } else {
-                    Either::Right
-                };
-                out((vm.variant, vm.to))
-            });
-        let v_fields = m_fields.into_iter().unzip();
-        let v_no_fields = m_no_fields.into_iter().unzip();
-
-        let to = create_to(enum_vis, &v_fields, &v_no_fields, m);
-        let from = create_from(enum_vis, &v_no_fields, m);
-
-        quote! {
-            #to
-            #from
-        }
-    });
+    let fns = mapings.iter_mut().map(|m| m.expand(enum_ident, enum_vis));
 
     TokenStream::from(quote! {
-        impl #enum_ident {
-            #(#fns)*
-        }
+        #(#fns)*
     })
-}
-
-/// Create [try]_to function TokenStreams
-fn create_to(
-    enum_vis: &syn::Visibility,
-    (v_idents_fields, v_str_fields): &(Vec<Ident>, Vec<String>),
-    (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>),
-    maping: &Maping,
-) -> proc_macro2::TokenStream {
-    if !maping.create_to {
-        return quote! {};
-    }
-    let fn_name = &maping.name;
-
-    let to = |def_to| {
-        let to_fn_name = format_ident!("to_{}", fn_name);
-        quote! {
-            #enum_vis fn #to_fn_name(&self) -> &'static str {
-                match self {
-                    #(Self::#v_idents_no_fields => #v_str_no_fields,)*
-                    #(Self::#v_idents_fields(..) => #v_str_fields,)*
-                    _ => #def_to
-                }
-            }
-        }
-    };
-
-    let try_to = || {
-        let to_fn_name = format_ident!("try_to_{}", fn_name);
-        quote! {
-            #enum_vis fn #to_fn_name(&self) -> ::std::option::Option<&'static str> {
-                match self {
-                    #(Self::#v_idents_no_fields => ::std::option::Option::Some(#v_str_no_fields),)*
-                    #(Self::#v_idents_fields(..) => ::std::option::Option::Some(#v_str_fields),)*
-                    _ => ::std::option::Option::None
-                }
-            }
-        }
-    };
-
-    match (&maping.default_to, &maping.create_try) {
-        (Some(def_to), false) => to(def_to),
-        (Some(def_to), true) => {
-            let to = to(def_to);
-            let try_to = try_to();
-            quote! {
-                #to
-                #try_to
-            }
-        }
-        (None, _) => try_to(),
-    }
-}
-
-/// Create [try_]from functions TokenStreams.
-fn create_from(
-    enum_vis: &syn::Visibility,
-    (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>),
-    m_fn: &Maping,
-) -> proc_macro2::TokenStream {
-    if !m_fn.create_from {
-        return quote! {};
-    }
-
-    let fn_name = &m_fn.name;
-
-    let from = |def_from| {
-        let from_fn_name = format_ident!("from_{}", fn_name);
-        quote! {
-            #enum_vis fn #from_fn_name(s: &str) -> Self {
-                match s {
-                    #(s if s == #v_str_no_fields => Self::#v_idents_no_fields,)*
-                    _ => Self::#def_from
-                }
-            }
-        }
-    };
-
-    let try_from = || {
-        let from_fn_name = format_ident!("try_from_{}", fn_name);
-        quote! {
-            #enum_vis fn #from_fn_name(s: &str) -> ::std::option::Option<Self> {
-                match s {
-                    #(s if s == #v_str_no_fields => ::std::option::Option::Some(Self::#v_idents_no_fields),)*
-                    _ => None
-                }
-            }
-        }
-    };
-
-    match (&m_fn.default_from, &m_fn.create_try) {
-        (Some(def_from), false) => from(def_from),
-        (Some(def_from), true) => {
-            let from = from(def_from);
-            let try_from = try_from();
-            quote! {
-                #from
-                #try_from
-            }
-        }
-        (None, _) => try_from(),
-    }
-}
-
-/// Single maping from variant to str
-#[derive(Debug)]
-struct MapingRule {
-    variant: Ident,
-    to: String,
-    has_fields: bool,
-}
-
-/// One maping with `self.name`
-#[derive(Debug)]
-struct Maping {
-    name: String,
-    rules: Vec<MapingRule>,
-    create_to: bool,
-    create_from: bool,
-    default_to: Option<String>,
-    default_from: Option<Ident>,
-    create_try: bool,
 }
 
 /// Parse enum variants to Maping, which are then used to create to/from functions
@@ -188,24 +44,28 @@ fn parse_variants_to_maping(
 ) -> syn::Result<Vec<Maping>> {
     let mut mapings: Vec<Maping> = Vec::new();
     let mut errors = MultiError::new();
+    let mut is_display_implemented = false;
 
     variants
         .iter()
-        .for_each(|v| parse_variant(v, &mut mapings, &mut errors));
+        .for_each(|v| parse_variant(v, &mut mapings, &mut errors, &mut is_display_implemented));
 
     errors.inner.map(|_| mapings)
 }
 
 /// Parse attributes on a single variant
-fn parse_variant(variant: &syn::Variant, mapings: &mut Vec<Maping>, errors: &mut MultiError) {
+fn parse_variant(variant: &syn::Variant, mapings: &mut Vec<Maping>, errors: &mut MultiError, is_display_implemented: &mut bool) {
     let mut mapstr_idx: usize = 0;
     let has_fields = !variant.fields.is_empty();
 
-    for attr in &variant.attrs {
-        match &attr.path.segments[0] {
+    variant
+        .attrs
+        .iter()
+        .filter(|&a| a.path.segments.len() == 1)
+        .for_each(|a| match &a.path.segments[0] {
             s if s.ident == "mapstr" => {
                 let res =
-                    parse_mapstr_attribute(mapings, &variant.ident, mapstr_idx, has_fields, attr);
+                    parse_mapstr_attribute(mapings, &variant.ident, mapstr_idx, has_fields, a, is_display_implemented);
 
                 if let Err(new_err) = res {
                     errors.update(new_err);
@@ -213,9 +73,8 @@ fn parse_variant(variant: &syn::Variant, mapings: &mut Vec<Maping>, errors: &mut
 
                 mapstr_idx += 1;
             }
-            _ => continue,
-        }
-    }
+            _ => {}
+        });
 }
 
 /// Parse single #[mapstr(..)]
@@ -225,6 +84,7 @@ fn parse_mapstr_attribute(
     mapstr_idx: usize,
     has_fields: bool,
     attr: &syn::Attribute,
+    is_display_implemented: &mut bool
 ) -> syn::Result<()> {
     let args = attr
         .parse_args_with(MapStrArguments::parse)?
@@ -246,28 +106,46 @@ fn parse_mapstr_attribute(
     };
 
     match maping {
-        Some(map) => {
-            // Maping fn already present, add new variant to the maping
-            map.rules.push(MapingRule {
+        Some(maping) => {
+            if let Some(kw) = args.impl_display {
+                if *is_display_implemented && !maping.impl_display { 
+                    // Some other maping is already implementing display, but we can allow multiple display keywords on same maping
+                    return Err(Error::TraitImplemented{tr: "Display", span: kw.span()}.into());
+                } else {
+                    *is_display_implemented = true;
+                }
+            }
+
+            // Maping fn already present, add new rule to the maping
+            maping.rules.push(MapingRule {
                 variant: vident.clone(),
                 to: args.mapped_value,
                 has_fields,
             });
             // Set defaults if unset
-            if map.default_to.is_none() {
-                map.default_to = args.default_to;
+            if maping.default_to.is_none() {
+                maping.default_to = args.default_to;
             }
-            if map.default_from.is_none() {
-                map.default_from = args.default_from;
+            if maping.default_from.is_none() {
+                maping.default_from = args.default_from;
             }
-            map.create_to &= args.create_to; // If once set to false, stays false. So if any mapstr sets to=false, function won't be generated
-            map.create_from &= args.create_from; // Same as above
-            map.create_try |= args.create_try; // If once set to true, stays true.
+            maping.create_to &= args.create_to; // If once set to false, stays false. So if any mapstr sets to=false, function won't be generated
+            maping.create_from &= args.create_from; // Same as above
+            maping.create_try |= args.create_try; // If once set to true, stays true.
+            maping.impl_display |= args.impl_display.is_some();
         }
 
         None => {
+            if let Some(kw) = args.impl_display {
+                if *is_display_implemented { // Some other maping is already implementing display
+                    return Err(Error::TraitImplemented{tr: "Display", span: kw.span()}.into());
+                } else {
+                    *is_display_implemented = true;
+                }
+            }
+
             // First encounter of such maping
-            let maping_rules = if args.is_default {
+            let rules = if args.is_default {
                 // We can ignore first maping if it's set as default since we know that defaults are not set and
                 // we cannot override it with later default.
                 Vec::new()
@@ -281,21 +159,197 @@ fn parse_mapstr_attribute(
 
             mapings.push(Maping {
                 name: args.name.unwrap(),
-                rules: maping_rules,
+                rules,
                 create_to: args.create_to,
                 create_from: args.create_from,
                 default_to: args.default_to,
                 default_from: args.default_from,
                 create_try: args.create_try,
+                impl_display: args.impl_display.is_some()
             });
         }
     }
     Ok(())
 }
+/// Single maping from variant to str
+#[derive(Debug)]
+struct MapingRule {
+    variant: Ident,
+    to: String,
+    has_fields: bool,
+}
 
-/// Parameters for one mapping function.
-///
-/// Handles collecting and updating parameters.
+/// One maping with `self.name`
+#[derive(Debug)]
+struct Maping {
+    name: String,
+    rules: Vec<MapingRule>,
+    create_to: bool,
+    create_from: bool,
+    default_to: Option<String>,
+    default_from: Option<Ident>,
+    create_try: bool,
+    impl_display: bool
+}
+
+impl Maping {
+    fn expand(&mut self, eident: &syn::Ident, evis: &syn::Visibility) -> proc_macro2::TokenStream {
+        let (m_fields, m_no_fields): (Vec<_>, Vec<_>) = std::mem::take(&mut self.rules)
+            .into_iter()
+            .partition_map(|vm| {
+                let out = if vm.has_fields {
+                    Either::Left
+                } else {
+                    Either::Right
+                };
+                out((vm.variant, vm.to))
+            });
+        let v_fields = m_fields.into_iter().unzip();
+        let v_no_fields = m_no_fields.into_iter().unzip();
+
+        let to = self.create_to(evis, &v_fields, &v_no_fields);
+        let from = self.create_from(evis, &v_no_fields);
+
+        let display = self.create_display(eident, &v_fields, &v_no_fields);
+
+        quote! {
+            impl #eident {
+                #to
+                #from
+            }
+
+            #display
+        }
+    }
+
+    /// Create [try]_to function TokenStreams
+    fn create_to(&self, 
+        enum_vis: &syn::Visibility,
+        (v_idents_fields, v_str_fields): &(Vec<Ident>, Vec<String>),
+        (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>)
+    ) -> proc_macro2::TokenStream {
+        if !self.create_to {
+            return quote! {};
+        }
+
+        let to = |def_to| {
+            let to_fn_name = format_ident!("to_{}", self.name);
+            quote! {
+                #enum_vis fn #to_fn_name(&self) -> &'static str {
+                    match self {
+                        #(Self::#v_idents_no_fields => #v_str_no_fields,)*
+                        #(Self::#v_idents_fields(..) => #v_str_fields,)*
+                        _ => #def_to
+                    }
+                }
+            }
+        };
+
+        let try_to = || {
+            let to_fn_name = format_ident!("try_to_{}", self.name);
+            quote! {
+                #enum_vis fn #to_fn_name(&self) -> ::std::option::Option<&'static str> {
+                    match self {
+                        #(Self::#v_idents_no_fields => ::std::option::Option::Some(#v_str_no_fields),)*
+                        #(Self::#v_idents_fields(..) => ::std::option::Option::Some(#v_str_fields),)*
+                        _ => ::std::option::Option::None
+                    }
+                }
+            }
+        };
+
+        match (&self.default_to, &self.create_try) {
+            (Some(def_to), false) => to(def_to),
+            (Some(def_to), true) => {
+                let to = to(def_to);
+                let try_to = try_to();
+                quote! {
+                    #to
+                    #try_to
+                }
+            }
+            (None, _) => try_to(),
+        }
+    }
+
+    /// Create [try_]from functions TokenStreams.
+    fn create_from(&self,
+        enum_vis: &syn::Visibility,
+        (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>)
+    ) -> proc_macro2::TokenStream {
+        if !self.create_from {
+            return quote! {};
+        }
+
+        let from = |def_from| {
+            let from_fn_name = format_ident!("from_{}", self.name);
+            quote! {
+                #enum_vis fn #from_fn_name(s: &str) -> Self {
+                    match s {
+                        #(s if s == #v_str_no_fields => Self::#v_idents_no_fields,)*
+                        _ => Self::#def_from
+                    }
+                }
+            }
+        };
+
+        let try_from = || {
+            let from_fn_name = format_ident!("try_from_{}", self.name);
+            quote! {
+                #enum_vis fn #from_fn_name(s: &str) -> ::std::option::Option<Self> {
+                    match s {
+                        #(s if s == #v_str_no_fields => ::std::option::Option::Some(Self::#v_idents_no_fields),)*
+                        _ => None
+                    }
+                }
+            }
+        };
+
+        match (&self.default_from, &self.create_try) {
+            (Some(def_from), false) => from(def_from),
+            (Some(def_from), true) => {
+                let from = from(def_from);
+                let try_from = try_from();
+                quote! {
+                    #from
+                    #try_from
+                }
+            }
+            (None, _) => try_from(),
+        }
+    }
+
+    /// Create impl block for Display trait
+    fn create_display(&self,
+        eident: &Ident,
+        (v_idents_fields, v_str_fields): &(Vec<Ident>, Vec<String>),
+        (v_idents_no_fields, v_str_no_fields): &(Vec<Ident>, Vec<String>)
+    ) -> proc_macro2::TokenStream {
+        if !self.impl_display {
+            return quote! {};
+        }
+
+        let def = if let Some(ref def) = self.default_to {
+            def.clone()
+        } else {
+            String::from("Unknown variant")
+        };
+
+        quote! {
+            impl ::std::fmt::Display for #eident {
+                fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+                    match self {
+                        #(Self::#v_idents_no_fields => write!(f, #v_str_no_fields),)*
+                        #(Self::#v_idents_fields(..) => write!(#v_str_fields),)*
+                        _ => write!(f,  #def)
+                    }
+                }
+            }
+        }
+
+    }
+}
+/// Parameters from one #[mapstr(..)]
 #[derive(Debug)]
 struct MapStrArguments {
     name: Option<String>,
@@ -306,6 +360,7 @@ struct MapStrArguments {
     default_from: Option<Ident>,
     is_default: bool,
     create_try: bool,
+    impl_display: Option<kw::display>,
 }
 
 impl MapStrArguments {
@@ -334,7 +389,7 @@ impl syn::parse::Parse for MapStrArguments {
         if lookahead.peek(syn::LitStr) {
             mapped_value = input.parse::<syn::LitStr>()?.value();
         } else {
-            return Err(Error::NotSet {
+            return Err(Error::ArgNotSet {
                 arg: "value",
                 span: input.span(),
             }
@@ -348,6 +403,7 @@ impl syn::parse::Parse for MapStrArguments {
         let mut default_from = None;
         let mut is_default = false;
         let mut create_try = false;
+        let mut impl_display = None;
 
         // There is somewhat optional comma. It's optional if `name` has been specified before.
         // It's not if we expect something afterwards. Parse anything after only is comma was found.
@@ -362,7 +418,7 @@ impl syn::parse::Parse for MapStrArguments {
                         if name.is_none() {
                             name = Some(value.value());
                         } else {
-                            return Err(Error::SetTwice {
+                            return Err(Error::ArgSetTwice {
                                 arg: "name",
                                 span: value.span(),
                             }
@@ -370,7 +426,7 @@ impl syn::parse::Parse for MapStrArguments {
                         }
                     }
                     MapStrArgument::Value { value, .. } => {
-                        return Err(Error::SetTwice {
+                        return Err(Error::ArgSetTwice {
                             arg: "value",
                             span: value.span(),
                         }
@@ -380,7 +436,7 @@ impl syn::parse::Parse for MapStrArguments {
                         if default_to.is_none() {
                             default_to = Some(value.value());
                         } else {
-                            return Err(Error::SetTwice {
+                            return Err(Error::ArgSetTwice {
                                 arg: "default_to",
                                 span: value.span(),
                             }
@@ -391,7 +447,7 @@ impl syn::parse::Parse for MapStrArguments {
                         if default_from.is_none() {
                             default_from = Some(value);
                         } else {
-                            return Err(Error::SetTwice {
+                            return Err(Error::ArgSetTwice {
                                 arg: "default_from",
                                 span: value.span(),
                             }
@@ -409,6 +465,9 @@ impl syn::parse::Parse for MapStrArguments {
                     }
                     MapStrArgument::Try { .. } => {
                         create_try = true;
+                    },
+                    MapStrArgument::ImplDisplay { kw_token } => {
+                        impl_display = Some(kw_token);
                     }
                 };
             }
@@ -423,6 +482,7 @@ impl syn::parse::Parse for MapStrArguments {
             create_from,
             create_try,
             is_default,
+            impl_display
         })
     }
 }
@@ -458,6 +518,9 @@ enum MapStrArgument {
     },
     Try {
         kw_token: kw::r#try,
+    },
+    ImplDisplay {
+        kw_token: kw::display,
     },
 }
 
@@ -497,12 +560,14 @@ impl syn::parse::Parse for MapStrArgument {
             item_kw!(Default)
         } else if lookahead.peek(kw::r#try) {
             item_kw!(Try)
+        } else if lookahead.peek(kw::display) {
+            item_kw!(ImplDisplay)
         } else if lookahead.peek(syn::LitStr) {
             Ok(Self::Value {
                 value: input.parse()?,
             })
         } else {
-            Err(lookahead.error())
+            Err(lookahead.error()) 
         }
     }
 }

@@ -18,26 +18,30 @@ impl MultiError {
 }
 
 pub(crate) enum Error {
-    SetTwice {
+    ArgSetTwice {
         arg: &'static str,
         span: proc_macro2::Span,
     },
-    NotSet {
+    ArgNotSet {
         arg: &'static str,
         span: proc_macro2::Span,
     },
+    TraitImplemented {
+        tr: &'static str,
+        span: proc_macro2::Span
+    }
 }
 
 impl Error {
     pub(crate) fn set_twice(arg: &'static str) -> Self {
-        Self::SetTwice {
+        Self::ArgSetTwice {
             arg,
             span: proc_macro2::Span::call_site(),
         }
     }
 
     pub(crate) fn not_set(arg: &'static str) -> Self {
-        Self::NotSet {
+        Self::ArgNotSet {
             arg,
             span: proc_macro2::Span::call_site(),
         }
@@ -46,25 +50,27 @@ impl Error {
 
 impl From<Error> for syn::Error {
     fn from(v: Error) -> syn::Error {
-        match v {
-            Error::SetTwice { arg, span } => {
-                syn::Error::new(span, format! {"argument `{arg}` is set twice"})
-            }
-            Error::NotSet { arg, span } => {
-                syn::Error::new(span, format! {"argument `{arg}` is not set"})
-            }
-        }
+        let msg = format!("{}", v);
+        let span = match v {
+            Error::ArgSetTwice { span,.. } => span,
+            Error::ArgNotSet { span, .. } => span,
+            Error::TraitImplemented {span, ..} => span,
+        };
+        syn::Error::new(span, msg)
     }
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::SetTwice { arg, .. } => {
+            Self::ArgSetTwice { arg, .. } => {
                 write!(f, "argument `{arg}` is set twice")
             }
-            Self::NotSet { arg, .. } => {
+            Self::ArgNotSet { arg, .. } => {
                 write!(f, "argument `{arg}` is not set")
+            }
+            Self::TraitImplemented {tr, ..} => {
+                write!(f, "trait `{tr}` is already implemented")
             }
         }
     }

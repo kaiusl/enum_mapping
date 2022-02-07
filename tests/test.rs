@@ -197,3 +197,69 @@ fn multi_def() {
     assert_eq!(E::from_dv2_f("err"), E::Error);
     assert_eq!(E::from_dv2_f("random"), E::Error);
 }
+
+#[test]
+fn display_default() {
+    #[derive(EnumMap, Debug, Eq, PartialEq)]
+    enum E {
+        #[mapstr("variant_1", name = "vname", display)]
+        V1,
+
+        #[mapstr("variant_2")]
+        V2,
+
+        #[mapstr("unknown", name = "vname", default)]
+        Unknown,
+
+        Err
+    }
+
+    assert_eq!(E::V1.to_vname(), "variant_1");
+    assert_eq!(E::V2.to_vname(), "variant_2");
+    assert_eq!(E::Unknown.to_vname(), "unknown");
+    assert_eq!(E::Err.to_vname(), "unknown");
+
+    assert_eq!(E::from_vname("variant_1"), E::V1);
+    assert_eq!(E::from_vname("variant_2"), E::V2);
+    assert_eq!(E::from_vname("unknown"), E::Unknown);
+    assert_eq!(E::from_vname("err"), E::Unknown);
+    assert_eq!(E::from_vname("random"), E::Unknown);
+
+    assert_eq!(format!("{}", E::V1), String::from("variant_1"));
+    assert_eq!(format!("{}", E::V2), String::from("variant_2"));
+    assert_eq!(format!("{}", E::Unknown), String::from("unknown"));
+    assert_eq!(format!("{}", E::Err), String::from("unknown"));
+}
+
+#[test]
+fn display_no_default() {
+    #[derive(EnumMap, Debug, Eq, PartialEq)]
+    enum E {
+        #[mapstr("variant_1", name = "vname", display)]
+        V1,
+
+        #[mapstr("variant_2")]
+        V2,
+
+        #[mapstr("unknown", name = "vname")]
+        Unknown,
+
+        Err
+    }
+
+    assert_eq!(E::V1.try_to_vname(), Some("variant_1"));
+    assert_eq!(E::V2.try_to_vname(), Some("variant_2"));
+    assert_eq!(E::Unknown.try_to_vname(), Some("unknown"));
+    assert_eq!(E::Err.try_to_vname(), None);
+
+    assert_eq!(E::try_from_vname("variant_1"), Some(E::V1));
+    assert_eq!(E::try_from_vname("variant_2"), Some(E::V2));
+    assert_eq!(E::try_from_vname("unknown"), Some(E::Unknown));
+    assert_eq!(E::try_from_vname("err"), None);
+    assert_eq!(E::try_from_vname("random"), None);
+
+    assert_eq!(format!("{}", E::V1), String::from("variant_1"));
+    assert_eq!(format!("{}", E::V2), String::from("variant_2"));
+    assert_eq!(format!("{}", E::Unknown), String::from("unknown"));
+    assert_eq!(format!("{}", E::Err), String::from("Unknown variant"));
+}

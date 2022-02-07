@@ -2,8 +2,10 @@ use enum_map::EnumMap;
 
 #[derive(EnumMap)]
 enum E {
-    #[mapstr("a", name="n", default_to="a", default_from=V1)]
+    #[mapstr("a", name="n", display)]
     V1,
+    #[mapstr("b", name="n", display)]
+    V2,
 }
 
 // #[derive(EnumMaping)]

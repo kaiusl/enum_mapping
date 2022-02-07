@@ -139,21 +139,17 @@ fn basic() {
 }
 
 #[test]
-fn multi_def() {
+fn multi_default() {
     #[derive(EnumMap, Debug, Eq, PartialEq)]
     enum E {
-        #[mapstr("variant_1",
-            name = "dv2",
-            default_to = "error",
-            default_from = Error
-        )]
-        #[mapstr("variant_1", name = "dv2_t", default_to = "error")]
+        #[mapstr("variant_1", name = "dv2", default_to = "error", default_from = Error)]
+        #[mapstr("variant_1", name = "dv2_t", default_to = "error2")]
         #[mapstr("variant_1", name = "dv2_f",  default_from = Error)]
         V1,
 
         #[mapstr("variant_2")]
-        #[mapstr("variant_2")]
-        #[mapstr("variant_2")]
+        #[mapstr("variant_2", default_to="error3")] // default_to should be ignored
+        #[mapstr("variant_2", default_from=Unknown)] // default_from should be ignored
         V2,
 
         #[mapstr("unknown", name = "dv2", default)]
@@ -178,7 +174,7 @@ fn multi_def() {
     assert_eq!(E::V1.to_dv2_t(), "variant_1");
     assert_eq!(E::V2.to_dv2_t(), "variant_2");
     assert_eq!(E::Unknown.to_dv2_t(), "unknown");
-    assert_eq!(E::Error.to_dv2_t(), "error");
+    assert_eq!(E::Error.to_dv2_t(), "error2");
 
     assert_eq!(E::from_dv2_t("variant_1"), E::V1);
     assert_eq!(E::from_dv2_t("variant_2"), E::V2);

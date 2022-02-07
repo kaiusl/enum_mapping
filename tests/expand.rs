@@ -2,9 +2,9 @@ use enum_map::EnumMap;
 
 #[derive(EnumMap)]
 enum E {
-    #[mapstr("a", name="n", display)]
+    #[mapstr("a", name = "n", display)]
     V1,
-    #[mapstr("b", name="n", display)]
+    #[mapstr("b", name = "n", display)]
     V2,
 }
 

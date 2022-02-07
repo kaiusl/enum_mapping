@@ -88,4 +88,10 @@ enum Ex8 {
 }
 
 #[derive(EnumMap)]
+enum Ex9 {
+    #[mapstr("fa", name="n")]
+    #[mapstr("fas", name="n")]
+    V1,
+}
+#[derive(EnumMap)]
 struct Sa {}

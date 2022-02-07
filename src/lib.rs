@@ -58,11 +58,11 @@ mod helpers;
 /// By default this macro will create two functions
 /// * `fn try_to_<name>(&self) -> Option<&'static str`>,
 /// * `fn try_from_<name>(s: &str) -> Option<Self>`.
-/// 
+///
 /// If defaults are set the created functions are
 /// * `fn to_<name>(&self) -> &'static str`,
 /// * `fn from_<name>(s: &str) -> Self`.
-/// 
+///
 /// First set of functions can still be then created be passing argument `try` to `mapstr` attribute.
 /// # Variant attributes
 /// * `mapstr(<value> [,opts])`
@@ -75,7 +75,7 @@ mod helpers;
 ///     - `no_to` : *optional keyword* - if set don't create `to` methods.
 ///     - `no_from` : *optional keyword* - if set don't create `from` methods.
 ///     - `display` : *optional keyword* - create implementation for [`Display`](std::fmt::Display) trait. It can only be present /// on one maping set. If default is not set then default display is `"Unknown variant"`.
-/// 
+///
 /// Optional arguments can be specified on any of the variants but only the first specification is used.
 /// # Current shortcomings
 /// * Variants with fields have limited support. They cannot be created with `frfunctions and in `to` functions the field values /// are currently ignored.
@@ -130,24 +130,24 @@ mod helpers;
 ///     #[mapstr("V1", name = "short", default_to="u", default_from=Unknown)] // set defaults
 ///     #[mapstr("Variant 1", name = "pretty", default_to="PrettyV1")]
 ///     V1,
-/// 
+///
 ///     // Mapings in the same order as on the first variant
 ///     #[mapstr("variant_2")] // vname
 ///     #[mapstr("V2")] // short
 ///     // ignore `V2` in pretty
 ///     #[mapstr("VARIANT_2", name = "caps")] // Create new maping ignoring the first variant.
 ///     V2,
-/// 
+///
 ///     // If `name` is specified, order doesn't matter. If not it must be in the corrct place.
 ///     #[mapstr("Variant 3", name = "pretty")] // Can be reordered
 ///     #[mapstr("V3")] // Must be second to be part of "short" maping.
 ///     #[mapstr("variant_3", name = "vname")] // Can be reordered
 ///     #[mapstr("VARIANT_3")] // part of "Caps" as that was specified fourth
 ///     V3,
-/// 
+///
 ///     #[mapstr("unknown", name = "vname", default)] // Set this variant to be default "vname" maping
 ///     Unknown,
-/// 
+///
 ///     #[mapstr("ERR", name = "caps")]
 ///     Error
 /// }

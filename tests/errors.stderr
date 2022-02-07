@@ -1,32 +1,10 @@
-warning: unused import: `Span`
- --> src/enum_map.rs
-  |
-  | use proc_macro2::{Ident, Span};
-  |                          ^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: associated function is never used: `set_twice`
-  --> src/helpers.rs
-   |
-   |     pub(crate) fn set_twice(arg: &'static str) -> Self {
-   |                   ^^^^^^^^^
-   |
-   = note: `#[warn(dead_code)]` on by default
-
-warning: associated function is never used: `not_set`
-  --> src/helpers.rs
-   |
-   |     pub(crate) fn not_set(arg: &'static str) -> Self {
-   |                   ^^^^^^^
-
 error: argument `value` is not set
   --> tests/errors.rs:37:14
    |
 37 |     #[mapstr()]
    |              ^
 
-error: argument `name` must be specified on first variant
+error: argument `name` is not set
   --> tests/errors.rs:43:7
    |
 43 |     #[mapstr("fa")]
@@ -38,19 +16,19 @@ error: argument `value` is not set
 49 |     #[mapstr(name="fas")]
    |              ^^^^
 
-error: argument `value` is set twice
+error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, `display`
   --> tests/errors.rs:55:30
    |
 55 |     #[mapstr("fa", name="n", "faas")]
    |                              ^^^^^^
 
-error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, `display`, string literal
+error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, `display`
   --> tests/errors.rs:62:30
    |
 62 |     #[mapstr("fa", name="n", fas)]
    |                              ^^^
 
-error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, `display`, string literal
+error: expected one of: `name`, `default_to`, `default_from`, `no_to`, `no_from`, `default`, `r#try`, `display`
   --> tests/errors.rs:68:31
    |
 68 |     #[mapstr("fa", name="n",  nasdf="faas")]
@@ -68,10 +46,16 @@ error: expected identifier
 86 |     #[mapstr("fa", name="n",  default_from="fa")]
    |                                            ^^^^
 
-error: expected `enum`
-  --> tests/errors.rs:91:1
+error: maping with name=`n` set twice
+  --> tests/errors.rs:93:26
    |
-91 | struct Sa {}
+93 |     #[mapstr("fas", name="n")]
+   |                          ^^^
+
+error: expected `enum`
+  --> tests/errors.rs:97:1
+   |
+97 | struct Sa {}
    | ^^^^^^
 
 error: cannot find attribute `mapstr2` in this scope

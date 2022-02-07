@@ -17,60 +17,85 @@ impl MultiError {
     }
 }
 
-pub(crate) enum Error {
-    ArgSetTwice {
-        arg: &'static str,
-        span: proc_macro2::Span,
-    },
-    ArgNotSet {
-        arg: &'static str,
-        span: proc_macro2::Span,
-    },
-    TraitImplemented {
-        tr: &'static str,
-        span: proc_macro2::Span
-    }
+/// Internal error type used to create compile errors
+// pub(crate) enum Error {
+//     ArgSetTwice {
+//         arg: &'static str,
+//         span: proc_macro2::Span,
+//     },
+//     ArgNotSet {
+//         arg: &'static str,
+//         span: proc_macro2::Span,
+//     },
+//     TraitAlreadyImplemented {
+//         tr: &'static str,
+//         span: proc_macro2::Span,
+//     },
+// }
+
+pub(crate) struct Error<'a> {
+    error: ErrorType<'a>,
+    span: proc_macro2::Span
 }
 
-impl Error {
-    pub(crate) fn set_twice(arg: &'static str) -> Self {
-        Self::ArgSetTwice {
-            arg,
-            span: proc_macro2::Span::call_site(),
+impl<'a> Error<'a> {
+    pub(crate) fn arg_set_twice(arg: &'a str, span: proc_macro2::Span) -> Self {
+        Self {
+            error: ErrorType::ArgSetTwice(arg),
+            span
         }
     }
 
-    pub(crate) fn not_set(arg: &'static str) -> Self {
-        Self::ArgNotSet {
-            arg,
-            span: proc_macro2::Span::call_site(),
+    pub(crate) fn arg_not_set(arg: &'a str, span: proc_macro2::Span) -> Self {
+        Self {
+            error: ErrorType::ArgNotSet(arg),
+            span
+        }
+    }
+
+    pub(crate) fn trait_already_implemented(tr: &'a str, span: proc_macro2::Span) -> Self {
+        Self {
+            error: ErrorType::TraitAlreadyImplemented(tr),
+            span
+        }
+    }
+
+    pub(crate) fn duplicate_maping(name: &'a str, span: proc_macro2::Span) -> Self {
+        Self {
+            error: ErrorType::DuplicateMaping(name),
+            span
         }
     }
 }
 
-impl From<Error> for syn::Error {
+pub(crate) enum ErrorType<'a> {
+    ArgSetTwice(&'a str),
+    ArgNotSet(&'a str),
+    TraitAlreadyImplemented(&'a str),
+    DuplicateMaping(&'a str),
+}
+
+impl<'a> From<Error<'a>> for syn::Error {
     fn from(v: Error) -> syn::Error {
-        let msg = format!("{}", v);
-        let span = match v {
-            Error::ArgSetTwice { span,.. } => span,
-            Error::ArgNotSet { span, .. } => span,
-            Error::TraitImplemented {span, ..} => span,
-        };
-        syn::Error::new(span, msg)
+        let msg = format!("{}", v.error);
+        syn::Error::new(v.span, msg)
     }
 }
 
-impl std::fmt::Display for Error {
+impl<'a> std::fmt::Display for ErrorType<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ArgSetTwice { arg, .. } => {
+            Self::ArgSetTwice(arg) => {
                 write!(f, "argument `{arg}` is set twice")
             }
-            Self::ArgNotSet { arg, .. } => {
+            Self::ArgNotSet(arg) => {
                 write!(f, "argument `{arg}` is not set")
             }
-            Self::TraitImplemented {tr, ..} => {
+            Self::TraitAlreadyImplemented(tr) => {
                 write!(f, "trait `{tr}` is already implemented")
+            },
+            Self::DuplicateMaping(name) => {
+                write!(f, "maping with name=`{name}` set twice")
             }
         }
     }

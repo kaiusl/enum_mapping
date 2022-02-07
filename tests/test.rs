@@ -148,7 +148,7 @@ fn multi_default() {
         V1,
 
         #[mapstr("variant_2")]
-        #[mapstr("variant_2", default_to="error3")] // default_to should be ignored
+        #[mapstr("variant_2", default_to = "error3")] // default_to should be ignored
         #[mapstr("variant_2", default_from=Unknown)] // default_from should be ignored
         V2,
 
@@ -207,7 +207,7 @@ fn display_default() {
         #[mapstr("unknown", name = "vname", default)]
         Unknown,
 
-        Err
+        Err,
     }
 
     assert_eq!(E::V1.to_vname(), "variant_1");
@@ -240,7 +240,7 @@ fn display_no_default() {
         #[mapstr("unknown", name = "vname")]
         Unknown,
 
-        Err
+        Err,
     }
 
     assert_eq!(E::V1.try_to_vname(), Some("variant_1"));
